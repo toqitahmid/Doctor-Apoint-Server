@@ -69,12 +69,14 @@ async function run() {
 
     app.get('/apointments', async(req,res) => {
       const result = await apointmentCollection.find().toArray();
+
       res.send(result);
     })
 
     app.post('/apointments', async(req,res) => {
       const bookingApoint = req.body
       const result = apointmentCollection.insertOne(bookingApoint)
+
       res.send(bookingApoint)
     })
 
@@ -85,6 +87,7 @@ async function run() {
         {_id: new ObjectId(id)},
         {$set: updatedApointment}
       )
+
       res.send(result);
     })
     
@@ -93,6 +96,7 @@ async function run() {
       const result = await apointmentCollection.deleteOne({
         _id: ObjectId(id),
       });
+      
       res.send(result);
     });
   }
