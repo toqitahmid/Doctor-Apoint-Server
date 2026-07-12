@@ -11,6 +11,7 @@ const PORT = process.env.PORT;
 const uri = process.env.MONGODB_URI;
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { createRemoteJWKSet, jwtVerify } = require('jose-node-cjs-runtime')
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -35,12 +36,39 @@ async function run() {
     const doctorCollection = db.collection('doctors');
     const apointmentCollection = db.collection('apointments');
 
-    app.get('/doctors', async(req,res) => {
-      const result = await doctorCollection.find().toArray()
-      res.send(result)
-    })
 
-    app.get("/doctors/:id", async (req, res) => {
+     const JWKS = createRemoteJWKSet(
+      new URL("http://localhost:3000/api/auth/jwks"),
+    );
+
+
+   const middleWare = async (req, res, next) => {
+     try {
+       const header = req.headers.authorization;
+
+       if (!header) {
+         return res.status(401).json({ error: "No authorization header" });
+       }
+
+       const token =  header;
+
+       const { payload } = await jwtVerify(token, JWKS);
+       req.user = payload; 
+      console.log(payload);
+       next();
+     } catch (error) {
+       console.error("JWT verification failed:", error.message);
+       return res.status(401).json({ error: "Invalid or expired token" });
+     }
+   };
+
+
+    app.get("/doctors", async (req, res) => {
+        const result = await doctorCollection.find().toArray();
+        res.send(result);
+      });
+
+    app.get("/doctors/:id", middleWare ,async (req, res) => {
       try {
         const { id } = req.params;
         
@@ -67,7 +95,23 @@ async function run() {
       }
     });
 
-    app.get('/apointments', async(req,res) => {
+    app.get("/api/doctors/cheap", async (req, res) => {
+      try {
+        const doctors = await doctorCollection
+          .find()
+          .sort({ experience: 1 })
+          .limit(3)
+          .toArray(); // needed since you're using the native MongoDB driver
+
+        res.status(200).json(doctors);
+      } catch (error) {
+        res
+          .status(500)
+          .json({ message: "Error fetching doctors", error: error.message });
+      }
+    });
+
+    app.get('/apointments',middleWare,async(req,res) => {
       const result = await apointmentCollection.find().toArray();
 
       res.send(result);
