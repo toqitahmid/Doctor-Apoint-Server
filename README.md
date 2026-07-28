@@ -3,7 +3,7 @@
 REST API server for the Doctor Appointment Manager application. Handles doctor listings, appointment booking, and JWT-based authentication verification. Built with Express and MongoDB, deployed on Render.
 
 **Base URL:** `https://doctor-apoint-server.onrender.com`
-
+ 
 ## Features
 
 - 📋 Fetch doctor listings and individual doctor profiles
